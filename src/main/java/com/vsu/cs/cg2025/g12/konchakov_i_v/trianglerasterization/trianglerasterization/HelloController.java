@@ -1,16 +1,13 @@
 package com.vsu.cs.cg2025.g12.konchakov_i_v.trianglerasterization.trianglerasterization;
 
-import javafx.beans.value.ChangeListener;
-import javafx.beans.value.ObservableValue;
-import javafx.event.EventHandler;
 import javafx.fxml.FXML;
 import javafx.geometry.Point2D;
 import javafx.scene.canvas.Canvas;
 import javafx.scene.canvas.GraphicsContext;
-import javafx.scene.control.Label;
 import javafx.scene.image.PixelWriter;
 import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.AnchorPane;
+import javafx.scene.paint.Color;
 
 import java.awt.*;
 import java.util.ArrayList;
@@ -54,16 +51,86 @@ public class HelloController {
                     points.get(0).getX(), points.get(0).getY(),
                     points.get(1).getX(), points.get(1).getY(),
                     points.get(2).getX(), points.get(2).getY(),
-                    Color.BLACK, Color.BLACK, Color.BLACK);
+                    Color.RED, Color.GREEN, Color.BLUE);
         }
     }
 
-    private void fillTriangle(GraphicsContext gc, double x1, double y1, double x2, double y2, double x3, double y3, Color c1, Color c2, Color c3) {
+    private void fillTriangle(GraphicsContext gc, double x1, double y1, double x2, double y2, double x3, double y3, javafx.scene.paint.Color c1, javafx.scene.paint.Color c2, javafx.scene.paint.Color c3) {
+        class LinearEquation {
+            private final Double k;
+            private final Double b;
+
+            public LinearEquation(double x1, double y1, double x2, double y2) {
+                if (x1 == x2 && y1 == y2) {
+                    k = null;
+                    b = null;
+                    return;
+                }
+                if (x1 == x2) {
+                    k = Double.MAX_VALUE;
+                    b = x1;
+                    return;
+                }
+                if (y1 == y2) {
+                    k = (double) 0;
+                    b = y1;
+                    return;
+                }
+
+                if (x1 == 0) {
+                    b = y1;
+                } else if (x2 == 0) {
+                    b = y2;
+                } else if (y1 == 0) {
+                    b = (double) 0;
+                    k = (y2 - b) / x2;
+                    return;
+                } else if (y2 == 0) {
+                    b = (double) 0;
+                    k = (y1 - b) / x1;
+                    return;
+                } else {
+                    b = (y2*x1 - y1*x2) / (x1 - x2);
+                }
+                if (x1 != 0) {
+                    k = (y1 - b) / x1;
+                } else {
+                    k = (y2 - b) / x2;
+                }
+            }
+
+            public double getX(double y) {
+                if (b == null || k == null) {
+                    return y;
+                }
+                if (k.equals((double) 0)) {
+                    return b;
+                }
+                if (k.equals(Double.MAX_VALUE)) {
+                    return b;
+                }
+                return (y - b) / k;
+            }
+        }
+
+        class ColoredPoint extends Point2D {
+            final javafx.scene.paint.Color color;
+
+            public ColoredPoint(double v, double v1, javafx.scene.paint.Color c) {
+                super(v, v1);
+                color = c;
+            }
+
+            public javafx.scene.paint.Color getColor() {
+                return color;
+            }
+        }
+
         PixelWriter pixelWriter = gc.getPixelWriter();
-        Point2D p1 = new Point2D(x1, y1);
-        Point2D p2 = new Point2D(x2, y2);
-        Point2D p3 = new Point2D(x3, y3);
-        Point2D[] pointArray = new Point2D[]{p1, p2, p3};
+        ColoredPoint p1 = new ColoredPoint(x1, y1, c1);
+        ColoredPoint p2 = new ColoredPoint(x2, y2, c2);
+        ColoredPoint p3 = new ColoredPoint(x3, y3, c3);
+        ColoredPoint[] pointArray = new ColoredPoint[]{p1, p2, p3};
         sortByY(pointArray);
 
         LinearEquation eq01 = new LinearEquation(pointArray[0].getX(), pointArray[0].getY(), pointArray[1].getX(), pointArray[1].getY());
@@ -81,7 +148,12 @@ public class HelloController {
             }
 
             for (double x = xBoundary1; x <= xBoundary2; x++) {
-                pixelWriter.setColor((int) Math.round(x), (int) Math.round(y), javafx.scene.paint.Color.BLACK);
+                Color c = interpolationColor(x, y,
+                        pointArray[0].getX(), pointArray[0].getY(),
+                        pointArray[1].getX(), pointArray[1].getY(),
+                        pointArray[2].getX(), pointArray[2].getY(),
+                        pointArray[0].getColor(), pointArray[1].getColor(), pointArray[2].getColor());
+                pixelWriter.setColor((int) Math.round(x), (int) Math.round(y), c);
             }
         }
         for (double y = pointArray[1].getY(); y < pointArray[2].getY(); y++) {
@@ -95,7 +167,12 @@ public class HelloController {
             }
 
             for (double x = xBoundary1; x <= xBoundary2; x++) {
-                pixelWriter.setColor((int) Math.round(x), (int) Math.round(y), javafx.scene.paint.Color.BLACK);
+                Color c = interpolationColor(x, y,
+                        pointArray[0].getX(), pointArray[0].getY(),
+                        pointArray[1].getX(), pointArray[1].getY(),
+                        pointArray[2].getX(), pointArray[2].getY(),
+                        pointArray[0].getColor(), pointArray[1].getColor(), pointArray[2].getColor());
+                pixelWriter.setColor((int) Math.round(x), (int) Math.round(y), c);
             }
         }
     }
@@ -114,64 +191,38 @@ public class HelloController {
         });
     }
 
-    private class LinearEquation {
-        private final Double k;
-        private final Double b;
+    private javafx.scene.paint.Color interpolationColor(double x, double y,
+                                                        double x1, double y1,
+                                                        double x2, double y2,
+                                                        double x3, double y3,
+                                                        Color c1, Color c2, Color c3) {
+        double gamma = ((x - x1)*(y2 - y1) - (y - y1)*(x2 - x1)) / ((x3 - x1)*(y2 - y1) - (y3 - y1)*(x2 - x1));
+        double beta = (y - y1 - gamma * (y3 - y1)) / (y2 - y1);
+        double alpha = 1 - beta - gamma;
 
-        public LinearEquation(double x1, double y1, double x2, double y2) {
-            if (x1 == x2 && y1 == y2) {
-                k = null;
-                b = null;
-                return;
-            }
-            if (x1 == x2) {
-                k = Double.MAX_VALUE;
-                b = x1;
-                return;
-            }
-            if (y1 == y2) {
-                k = (double) 0;
-                b = y1;
-                return;
-            }
+        double red = alpha * c1.getRed() + beta * c2.getRed() + gamma * c3.getRed();
+        double green = alpha * c1.getGreen() + beta * c2.getGreen() + gamma * c3.getGreen();
+        double blue = alpha * c1.getBlue() + beta * c2.getBlue() + gamma * c3.getBlue();
 
-            if (x1 == 0) {
-                b = y1;
-            } else if (x2 == 0) {
-                b = y2;
-            } else if (y1 == 0) {
-                b = (double) 0;
-                k = (y2 - b) / x2;
-                return;
-            } else if (y2 == 0) {
-                b = (double) 0;
-                k = (y1 - b) / x1;
-                return;
-            } else {
-                b = (y2 - y2 * (x2/x1)) / (1 - (x2/x1));
-            }
-            if (x1 != 0) {
-                k = (y1 - b) / x1;
-            } else {
-                k = (y2 - b) / x2;
-            }
+        if (green >= 1) {
+            green = 1;
+        }
+        if (red >= 1) {
+            red = 1;
+        }
+        if (blue >= 1) {
+            blue = 1;
+        }
+        if (red <= 0) {
+            red = 0;
+        }
+        if (green <= 0) {
+            green = 0;
+        }
+        if (blue <= 0) {
+            blue = 0;
         }
 
-        public double getX(double y) {
-            if (b == null || k == null) {
-                return y;
-            }
-            if (k.equals((double) 0)) {
-                return b;
-            }
-            if (k.equals(Double.MAX_VALUE)) {
-                return b;
-            }
-            return (y - b) / k;
-        }
-
-        public Double getK() {
-            return k;
-        }
+        return new Color(red, green, blue, 1);
     }
 }
