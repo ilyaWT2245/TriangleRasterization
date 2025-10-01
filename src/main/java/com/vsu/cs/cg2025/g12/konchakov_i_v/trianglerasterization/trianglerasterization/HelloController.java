@@ -22,6 +22,13 @@ public class HelloController {
     private Canvas canvas;
 
     ArrayList<Point2D> points = new ArrayList<>();
+    java.awt.Color c1 = new java.awt.Color(29, 213, 0);
+    java.awt.Color c2 = new java.awt.Color(0, 213, 99);
+    java.awt.Color c3 = new java.awt.Color(0, 213, 163);
+
+    Color color1 = new Color((double) c1.getRed() /255, (double) c1.getGreen() /255, (double) c1.getBlue() /255, 1);
+    Color color2 = new Color((double) c2.getRed() /255, (double) c2.getGreen() /255, (double) c2.getBlue() /255, 1);
+    Color color3 = new Color((double) c3.getRed() /255, (double) c3.getGreen() /255, (double) c3.getBlue() /255, 1);
 
     @FXML
     protected void initialize() {
@@ -51,7 +58,7 @@ public class HelloController {
                     points.get(0).getX(), points.get(0).getY(),
                     points.get(1).getX(), points.get(1).getY(),
                     points.get(2).getX(), points.get(2).getY(),
-                    Color.RED, Color.GREEN, Color.BLUE);
+                    color1, color2, color3);
         }
     }
 
