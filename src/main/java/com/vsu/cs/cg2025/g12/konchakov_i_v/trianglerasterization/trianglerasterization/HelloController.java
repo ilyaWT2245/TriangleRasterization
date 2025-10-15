@@ -22,9 +22,9 @@ public class HelloController {
     private Canvas canvas;
 
     ArrayList<Point2D> points = new ArrayList<>();
-    java.awt.Color c1 = new java.awt.Color(29, 213, 0);
-    java.awt.Color c2 = new java.awt.Color(0, 213, 99);
-    java.awt.Color c3 = new java.awt.Color(0, 213, 163);
+    java.awt.Color c1 = new java.awt.Color(255, 0, 0);
+    java.awt.Color c2 = new java.awt.Color(255, 138, 0);
+    java.awt.Color c3 = new java.awt.Color(255, 234, 0);
 
     Color color1 = new Color((double) c1.getRed() /255, (double) c1.getGreen() /255, (double) c1.getBlue() /255, 1);
     Color color2 = new Color((double) c2.getRed() /255, (double) c2.getGreen() /255, (double) c2.getBlue() /255, 1);
@@ -68,38 +68,38 @@ public class HelloController {
             private final Double b;
 
             public LinearEquation(double x1, double y1, double x2, double y2) {
-                if (x1 == x2 && y1 == y2) {
+                if (Double.valueOf(x1).equals(x2) && Double.valueOf(y1).equals(y2)) {
                     k = null;
                     b = null;
                     return;
                 }
-                if (x1 == x2) {
+                if (Double.valueOf(x1).equals(x2)) {
                     k = Double.MAX_VALUE;
                     b = x1;
                     return;
                 }
-                if (y1 == y2) {
+                if (Double.valueOf(y1).equals(y2)) {
                     k = (double) 0;
                     b = y1;
                     return;
                 }
 
-                if (x1 == 0) {
+                if (Double.valueOf(x1).equals(0.0)) {
                     b = y1;
-                } else if (x2 == 0) {
+                } else if (Double.valueOf(x2).equals(0.0)) {
                     b = y2;
-                } else if (y1 == 0) {
+                } else if (Double.valueOf(y1).equals(0.0)) {
                     b = (double) 0;
                     k = (y2 - b) / x2;
                     return;
-                } else if (y2 == 0) {
+                } else if (Double.valueOf(y2).equals(0.0)) {
                     b = (double) 0;
                     k = (y1 - b) / x1;
                     return;
                 } else {
                     b = (y2*x1 - y1*x2) / (x1 - x2);
                 }
-                if (x1 != 0) {
+                if (!Double.valueOf(x1).equals(0.0)) {
                     k = (y1 - b) / x1;
                 } else {
                     k = (y2 - b) / x2;
@@ -155,14 +155,14 @@ public class HelloController {
             }
 
             for (double x = xBoundary1; x <= xBoundary2; x++) {
-                Color c = interpolationColor(x, y,
+                Vector vector = new Vector(x, y,
                         pointArray[0].getX(), pointArray[0].getY(),
                         pointArray[1].getX(), pointArray[1].getY(),
-                        pointArray[2].getX(), pointArray[2].getY(),
-                        pointArray[0].getColor(), pointArray[1].getColor(), pointArray[2].getColor());
-                pixelWriter.setColor((int) Math.round(x), (int) Math.round(y), c);
+                        pointArray[2].getX(), pointArray[2].getY());
+                pixelWriter.setColor((int) Math.round(x), (int) Math.round(y), interpolationColor(vector, pointArray[0].getColor(), pointArray[1].getColor(), pointArray[2].getColor()));
             }
         }
+
         for (double y = pointArray[1].getY(); y < pointArray[2].getY(); y++) {
             double xBoundary1 = eq12.getX(y);
             double xBoundary2 = eq02.getX(y);
@@ -174,12 +174,11 @@ public class HelloController {
             }
 
             for (double x = xBoundary1; x <= xBoundary2; x++) {
-                Color c = interpolationColor(x, y,
+                Vector vector = new Vector(x, y,
                         pointArray[0].getX(), pointArray[0].getY(),
                         pointArray[1].getX(), pointArray[1].getY(),
-                        pointArray[2].getX(), pointArray[2].getY(),
-                        pointArray[0].getColor(), pointArray[1].getColor(), pointArray[2].getColor());
-                pixelWriter.setColor((int) Math.round(x), (int) Math.round(y), c);
+                        pointArray[2].getX(), pointArray[2].getY());
+                pixelWriter.setColor((int) Math.round(x), (int) Math.round(y), interpolationColor(vector, pointArray[0].getColor(), pointArray[1].getColor(), pointArray[2].getColor()));
             }
         }
     }
@@ -198,38 +197,61 @@ public class HelloController {
         });
     }
 
-    private javafx.scene.paint.Color interpolationColor(double x, double y,
-                                                        double x1, double y1,
-                                                        double x2, double y2,
-                                                        double x3, double y3,
+    private javafx.scene.paint.Color interpolationColor(Vector v,
                                                         Color c1, Color c2, Color c3) {
-        double gamma = ((x - x1)*(y2 - y1) - (y - y1)*(x2 - x1)) / ((x3 - x1)*(y2 - y1) - (y3 - y1)*(x2 - x1));
-        double beta = (y - y1 - gamma * (y3 - y1)) / (y2 - y1);
-        double alpha = 1 - beta - gamma;
+        double red = v.getX() * c1.getRed() + v.getY() * c2.getRed() + v.getZ() * c3.getRed();
+        double green = v.getY() * c1.getGreen() + v.getY() * c2.getGreen() + v.getZ() * c3.getGreen();
+        double blue = v.getY() * c1.getBlue() + v.getY() * c2.getBlue() + v.getZ() * c3.getBlue();
 
-        double red = alpha * c1.getRed() + beta * c2.getRed() + gamma * c3.getRed();
-        double green = alpha * c1.getGreen() + beta * c2.getGreen() + gamma * c3.getGreen();
-        double blue = alpha * c1.getBlue() + beta * c2.getBlue() + gamma * c3.getBlue();
+        red = clamp(red, 0, 1);
+        green = clamp(green, 0, 1);
+        blue = clamp(blue, 0, 1);
 
-        if (green >= 1) {
-            green = 1;
-        }
-        if (red >= 1) {
-            red = 1;
-        }
-        if (blue >= 1) {
-            blue = 1;
-        }
-        if (red <= 0) {
-            red = 0;
-        }
-        if (green <= 0) {
-            green = 0;
-        }
-        if (blue <= 0) {
-            blue = 0;
-        }
 
         return new Color(red, green, blue, 1);
+    }
+
+    class Vector {
+        private double x;
+        private double y;
+        private double z;
+
+        public Vector(double curX, double curY,
+                      double x1, double y1,
+                      double x2, double y2,
+                      double x3, double y3) {
+            setBarycentric(curX, curY, x1, y1, x2, y2, x3, y3);
+        }
+
+        private void setBarycentric(double curX, double curY,
+                                    double x1, double y1,
+                                    double x2, double y2,
+                                    double x3, double y3) {
+            z = ((curX - x1)*(y2 - y1) - (curY - y1)*(x2 - x1)) / ((x3 - x1)*(y2 - y1) - (y3 - y1)*(x2 - x1));
+            y = (curY - y1 - z * (y3 - y1)) / (y2 - y1);
+            x = 1 - y - z;
+        }
+
+        public double getX() {
+            return x;
+        }
+
+        public double getY() {
+            return y;
+        }
+
+        public double getZ() {
+            return z;
+        }
+    }
+
+    private double clamp(double a, double left, double right) {
+        if (a - right > 0) {
+            return right;
+        }
+        if (a - left < 0) {
+            return left;
+        }
+        return a;
     }
 }
