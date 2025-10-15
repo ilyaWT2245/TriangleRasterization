@@ -51,7 +51,7 @@ public class HelloController {
                     points.get(0).getX(), points.get(0).getY(),
                     points.get(1).getX(), points.get(1).getY(),
                     points.get(2).getX(), points.get(2).getY(),
-                    Color.RED, Color.GREEN, Color.BLUE);
+                    Color.RED, Color.BLACK, Color.BLUE);
         }
     }
 
@@ -61,38 +61,38 @@ public class HelloController {
             private final Double b;
 
             public LinearEquation(double x1, double y1, double x2, double y2) {
-                if (x1 == x2 && y1 == y2) {
+                if (Double.valueOf(x1).equals(x2) && Double.valueOf(y1).equals(y2)) {
                     k = null;
                     b = null;
                     return;
                 }
-                if (x1 == x2) {
+                if (Double.valueOf(x1).equals(x2)) {
                     k = Double.MAX_VALUE;
                     b = x1;
                     return;
                 }
-                if (y1 == y2) {
+                if (Double.valueOf(y1).equals(y2)) {
                     k = (double) 0;
                     b = y1;
                     return;
                 }
 
-                if (x1 == 0) {
+                if (Double.valueOf(x1).equals(0.0)) {
                     b = y1;
-                } else if (x2 == 0) {
+                } else if (Double.valueOf(x2).equals(0.0)) {
                     b = y2;
-                } else if (y1 == 0) {
+                } else if (Double.valueOf(y1).equals(0.0)) {
                     b = (double) 0;
                     k = (y2 - b) / x2;
                     return;
-                } else if (y2 == 0) {
+                } else if (Double.valueOf(y2).equals(0.0)) {
                     b = (double) 0;
                     k = (y1 - b) / x1;
                     return;
                 } else {
                     b = (y2*x1 - y1*x2) / (x1 - x2);
                 }
-                if (x1 != 0) {
+                if (!Double.valueOf(x1).equals(0.0)) {
                     k = (y1 - b) / x1;
                 } else {
                     k = (y2 - b) / x2;
@@ -196,33 +196,40 @@ public class HelloController {
                                                         double x2, double y2,
                                                         double x3, double y3,
                                                         Color c1, Color c2, Color c3) {
-        double gamma = ((x - x1)*(y2 - y1) - (y - y1)*(x2 - x1)) / ((x3 - x1)*(y2 - y1) - (y3 - y1)*(x2 - x1));
-        double beta = (y - y1 - gamma * (y3 - y1)) / (y2 - y1);
-        double alpha = 1 - beta - gamma;
+
+        double[] bCoords = getBarycentric(x, y, x1, y1, x2, y2, x3, y3);
+        double gamma = bCoords[2];
+        double beta = bCoords[1];
+        double alpha = bCoords[0];
 
         double red = alpha * c1.getRed() + beta * c2.getRed() + gamma * c3.getRed();
         double green = alpha * c1.getGreen() + beta * c2.getGreen() + gamma * c3.getGreen();
         double blue = alpha * c1.getBlue() + beta * c2.getBlue() + gamma * c3.getBlue();
 
-        if (green >= 1) {
-            green = 1;
-        }
-        if (red >= 1) {
-            red = 1;
-        }
-        if (blue >= 1) {
-            blue = 1;
-        }
-        if (red <= 0) {
-            red = 0;
-        }
-        if (green <= 0) {
-            green = 0;
-        }
-        if (blue <= 0) {
-            blue = 0;
-        }
+        red = clamp(red, 0, 1);
+        green = clamp(green, 0, 1);
+        blue = clamp(blue, 0, 1);
 
         return new Color(red, green, blue, 1);
+    }
+
+    private double clamp(double a, double left, double right) {
+        if (a - right > 0) {
+            return right;
+        }
+        if (a - left < 0) {
+            return left;
+        }
+        return a;
+    }
+
+    private double[] getBarycentric(double x, double y,
+                                    double x1, double y1,
+                                    double x2, double y2,
+                                    double x3, double y3) {
+        double gamma = ((x - x1)*(y2 - y1) - (y - y1)*(x2 - x1)) / ((x3 - x1)*(y2 - y1) - (y3 - y1)*(x2 - x1));
+        double beta = (y - y1 - gamma * (y3 - y1)) / (y2 - y1);
+        double alpha = 1 - beta - gamma;
+        return new double[]{alpha, beta, gamma};
     }
 }
