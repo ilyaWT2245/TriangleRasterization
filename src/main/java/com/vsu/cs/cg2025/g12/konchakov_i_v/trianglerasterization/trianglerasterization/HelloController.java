@@ -9,7 +9,6 @@ import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.AnchorPane;
 import javafx.scene.paint.Color;
 
-import java.awt.*;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
@@ -51,7 +50,7 @@ public class HelloController {
                     points.get(0).getX(), points.get(0).getY(),
                     points.get(1).getX(), points.get(1).getY(),
                     points.get(2).getX(), points.get(2).getY(),
-                    Color.RED, Color.BLACK, Color.BLUE);
+                    Color.RED, Color.WHITE, Color.BLUE);
         }
     }
 
@@ -59,40 +58,41 @@ public class HelloController {
         class LinearEquation {
             private final Double k;
             private final Double b;
+            private static final double DELTA = 1E-4;
 
             public LinearEquation(double x1, double y1, double x2, double y2) {
-                if (Double.valueOf(x1).equals(x2) && Double.valueOf(y1).equals(y2)) {
+                if (Math.abs(x1 - x2) <= DELTA && Math.abs(y1 - y2) <= DELTA) {
                     k = null;
                     b = null;
                     return;
                 }
-                if (Double.valueOf(x1).equals(x2)) {
+                if (Math.abs(x1 - x2) <= DELTA) {
                     k = Double.MAX_VALUE;
                     b = x1;
                     return;
                 }
-                if (Double.valueOf(y1).equals(y2)) {
+                if (Math.abs(y1 - y2) <= DELTA) {
                     k = (double) 0;
                     b = y1;
                     return;
                 }
 
-                if (Double.valueOf(x1).equals(0.0)) {
+                if (Math.abs(x1) <= DELTA) {
                     b = y1;
-                } else if (Double.valueOf(x2).equals(0.0)) {
+                } else if (Math.abs(x2) <= DELTA) {
                     b = y2;
-                } else if (Double.valueOf(y1).equals(0.0)) {
+                } else if (Math.abs(y1) <= DELTA) {
                     b = (double) 0;
                     k = (y2 - b) / x2;
                     return;
-                } else if (Double.valueOf(y2).equals(0.0)) {
+                } else if (Math.abs(y2) <= DELTA) {
                     b = (double) 0;
                     k = (y1 - b) / x1;
                     return;
                 } else {
                     b = (y2*x1 - y1*x2) / (x1 - x2);
                 }
-                if (!Double.valueOf(x1).equals(0.0)) {
+                if (Math.abs(x1) > DELTA) {
                     k = (y1 - b) / x1;
                 } else {
                     k = (y2 - b) / x2;
@@ -148,10 +148,8 @@ public class HelloController {
             }
 
             for (double x = xBoundary1; x <= xBoundary2; x++) {
-                Color c = interpolationColor(x, y,
-                        pointArray[0].getX(), pointArray[0].getY(),
-                        pointArray[1].getX(), pointArray[1].getY(),
-                        pointArray[2].getX(), pointArray[2].getY(),
+                double[] bCoords = getBarycentric(x, y, x1, y1, x2, y2, x3, y3);
+                Color c = interpolationColor(bCoords[0], bCoords[1], bCoords[2],
                         pointArray[0].getColor(), pointArray[1].getColor(), pointArray[2].getColor());
                 pixelWriter.setColor((int) Math.round(x), (int) Math.round(y), c);
             }
@@ -167,10 +165,8 @@ public class HelloController {
             }
 
             for (double x = xBoundary1; x <= xBoundary2; x++) {
-                Color c = interpolationColor(x, y,
-                        pointArray[0].getX(), pointArray[0].getY(),
-                        pointArray[1].getX(), pointArray[1].getY(),
-                        pointArray[2].getX(), pointArray[2].getY(),
+                double[] bCoords = getBarycentric(x, y, x1, y1, x2, y2, x3, y3);
+                Color c = interpolationColor(bCoords[0], bCoords[1], bCoords[2],
                         pointArray[0].getColor(), pointArray[1].getColor(), pointArray[2].getColor());
                 pixelWriter.setColor((int) Math.round(x), (int) Math.round(y), c);
             }
@@ -191,17 +187,8 @@ public class HelloController {
         });
     }
 
-    private javafx.scene.paint.Color interpolationColor(double x, double y,
-                                                        double x1, double y1,
-                                                        double x2, double y2,
-                                                        double x3, double y3,
+    private javafx.scene.paint.Color interpolationColor(double alpha, double beta, double gamma,
                                                         Color c1, Color c2, Color c3) {
-
-        double[] bCoords = getBarycentric(x, y, x1, y1, x2, y2, x3, y3);
-        double gamma = bCoords[2];
-        double beta = bCoords[1];
-        double alpha = bCoords[0];
-
         double red = alpha * c1.getRed() + beta * c2.getRed() + gamma * c3.getRed();
         double green = alpha * c1.getGreen() + beta * c2.getGreen() + gamma * c3.getGreen();
         double blue = alpha * c1.getBlue() + beta * c2.getBlue() + gamma * c3.getBlue();
@@ -214,10 +201,10 @@ public class HelloController {
     }
 
     private double clamp(double a, double left, double right) {
-        if (a - right > 0) {
+        if (a > right) {
             return right;
         }
-        if (a - left < 0) {
+        if (a < left) {
             return left;
         }
         return a;
@@ -227,8 +214,9 @@ public class HelloController {
                                     double x1, double y1,
                                     double x2, double y2,
                                     double x3, double y3) {
-        double gamma = ((x - x1)*(y2 - y1) - (y - y1)*(x2 - x1)) / ((x3 - x1)*(y2 - y1) - (y3 - y1)*(x2 - x1));
-        double beta = (y - y1 - gamma * (y3 - y1)) / (y2 - y1);
+        double det = (x1 - x3)*(y2 - y3) - (x2 -x3)*(y1 - y3);
+        double gamma = (x1*y2 - x1*y - x2*y1 + x2*y + x*y1 - x*y2) / det;
+        double beta = (x1*y - x1*y3 - x*y1 + x*y3 + x3*y1 - x3*y) / det;
         double alpha = 1 - beta - gamma;
         return new double[]{alpha, beta, gamma};
     }

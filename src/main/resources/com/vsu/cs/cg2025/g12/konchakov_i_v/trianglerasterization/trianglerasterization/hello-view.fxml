@@ -5,6 +5,6 @@
 
 <AnchorPane fx:id="anchorPane" xmlns:fx="http://javafx.com/fxml"
             fx:controller="com.vsu.cs.cg2025.g12.konchakov_i_v.trianglerasterization.trianglerasterization.HelloController">
-  <Canvas fx:id="canvas" width="800" height="600" AnchorPane.topAnchor="30.0"/>
+  <Canvas fx:id="canvas" width="1920" height="1080" AnchorPane.topAnchor="30.0"/>
 </AnchorPane>
 
